@@ -224,11 +224,16 @@ public class Ticketmaster {
 				String latitude = getLatitude(addrArray.getJSONObject(0));
 				String longitude = getLongitude(addrArray.getJSONObject(0));
 
-				EventsEntity eventDetails = new EventsEntity(eventName, eventDesc, latitude, longitude);
+				EventsEntity eventDetails = new EventsEntity(parseString(eventName), eventDesc, latitude, longitude);
 
 				eventsArrList.add(eventDetails);
 			}
 		}
 		return eventsArrList;
 	}
+	
+	private String parseString(String string) {
+		return string.replaceAll("&", "and");
+	}
+	
 }
