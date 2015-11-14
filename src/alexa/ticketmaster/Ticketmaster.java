@@ -1,44 +1,62 @@
 package alexa.ticketmaster;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
+import java.net.URLEncoder;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
+import javax.ws.rs.core.MultivaluedMap;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.WebResource;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 public class Ticketmaster {
-
-	public static void main(String[] args) {
-		try {
-			URL url = new URL(
-					"https://app.ticketmaster.com/discovery/v1/events.json?apikey=7elxdku9GGG5k8j0Xm8KWdANDgecHMV0&keyword=los%20angeles");
-
-			HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-
-			if (conn.getResponseCode() != 200) {
-				throw new IOException(conn.getResponseMessage());
-			}
-
-			// Buffer the result into a string
-			BufferedReader rd = new BufferedReader(new InputStreamReader(conn.getInputStream()));
-			StringBuilder sb = new StringBuilder();
-			String line;
-			while ((line = rd.readLine()) != null) {
-				sb.append(line);
-			}
-			rd.close();
-
-			conn.disconnect();
-			System.out.println(sb.toString());
-		} catch (MalformedURLException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+	private static final String hostServer = "https://app.ticketmaster.com";
+	
+	private static final String API_KEY = "apikey";
+	private static final String apiValue = "7elxdku9GGG5k8j0Xm8KWdANDgecHMV0";
+	
+	private static final String discoveryApi = "/discovery/v1";
+	private static final String eventsEndPoint = "/events.json";
+	
+	public String getEventDetails(String location, String date) {
+		WebResource resource = setupClient();
+		resource = resource.path(eventsEndPoint);
+		
+		//Creating request parameters
+		MultivaluedMap<String, String> params = new MultivaluedMapImpl();
+		params.add(API_KEY, apiValue);
+		params.add("keyword", URLEncoder.encode(location));
+		params.add("startDateTime", constructDateTimeQueryParam(date));
+				
+		resource = resource.queryParams(params);
+		
+		ClientResponse clientResponse = resource.get(ClientResponse.class);
+		String response = null;
+		if (clientResponse.getStatus() == ClientResponse.Status.OK.getStatusCode()) {
+			response = clientResponse.getEntity(String.class);
 		}
-
+		
+		return response;
 	}
-
+	
+	private String constructDateTimeQueryParam(String date) {
+		DateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
+		Calendar cal = Calendar.getInstance();
+		String time = dateFormat.format(cal.getTime());
+		
+		String timeQuery = "T" + time + "Z";
+		System.out.println(date+timeQuery);
+		return date+timeQuery;
+	}
+	
+	private WebResource setupClient() {
+		Client client = Client.create();
+		WebResource webResource = client.resource(hostServer).path(discoveryApi);
+		return webResource;
+	}
+	
+	
 }
